@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="BrainByte: Coding Challenge web game prototype"
+  />
+  <title>BrainByte: Coding Challenge</title>
+
+  <link rel="stylesheet" href="../style.css" />
+</head>
+
+<body>
+
+  <div id="app" class="app-shell hacker-theme">
+
+    <main>
+
+      <!-- =========================================================
+           MAIN MENU
+      ========================================================== -->
+      <section
+        id="mainMenu"
+        class="screen screen-main-menu active"
+        aria-labelledby="mainMenuTitle"
+      >
+
+        <div class="menu-card">
+
+          <div class="menu-left">
+
+            <div class="save-info">
+              <div>
+                Selected User:
+                <strong id="menuUsername" class="accent-text">Guest</strong>
+              </div>
+
+              <div>
+                Last Save:
+                <strong id="lastSave">No save yet</strong>
+              </div>
+            </div>
+
+            <div class="menu-actions">
+              <button id="continueBtn" class="menu-btn primary" type="button">
+                <span class="btn-icon">▶</span>
+                CONTINUE
+              </button>
+
+              <button id="newGameBtn" class="menu-btn" type="button">
+                <span class="btn-icon">✦</span>
+                NEW GAME
+              </button>
+
+              <button id="optionsBtn" class="menu-btn" type="button">
+                <span class="btn-icon">⚙</span>
+                OPTIONS
+              </button>
+
+              <button id="leaderboardsBtn" class="menu-btn" type="button">
+                <span class="btn-icon">★</span>
+                LEADERBOARDS
+              </button>
+
+              <button id="exitBtn" class="menu-btn danger" type="button">
+                <span class="btn-icon">×</span>
+                EXIT
+              </button>
+            </div>
+          </div>
+
+          <!-- MAIN PREVIEW -->
+          <div class="menu-preview" aria-label="Main scene preview">
+            <div class="preview-grid"></div>
+            <div class="logo-box" aria-label="BrainByte logo and title">
+              <img src="/assets/brainbyte-logo.png" alt="BrainByte Logo">
+            </div>
+          </div>
+
+        </div>
+
+        <div class="version">
+          Version 0.1 • Browser Prototype
+        </div>
+
+      </section>
+
+      <!-- =========================================================
+           OPTIONS
+      ========================================================== -->
+      <section id="optionsScreen" class="screen" aria-labelledby="optionsTitle">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">SYS.ADMIN // PLAYER MANAGEMENT</p>
+              <h1 id="optionsTitle">Options</h1>
+            </div>
+            <div class="current-user-badge">
+              Current user:
+              <strong id="optionsUsername" class="accent-text">Guest</strong>
+            </div>
+          </div>
+
+          <div class="option-grid">
+            <button id="addUserBtn" class="feature-card" type="button">
+              <span class="feature-icon">+</span>
+              <span>
+                <strong>ADD USER</strong>
+                <small>Create a new player profile</small>
+              </span>
+            </button>
+
+            <button id="changeUserBtn" class="feature-card" type="button">
+              <span class="feature-icon">⇄</span>
+              <span>
+                <strong>CHANGE USER</strong>
+                <small>Switch to another profile</small>
+              </span>
+            </button>
+
+            <button id="deleteUserBtn" class="feature-card danger-card" type="button">
+              <span class="feature-icon">⌫</span>
+              <span>
+                <strong>DELETE USER</strong>
+                <small>Delete saved progress permanently</small>
+              </span>
+            </button>
+          </div>
+
+          <button id="optionsBackBtn" class="wide-btn secondary" type="button">
+            RETURN
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           LEADERBOARDS
+      ========================================================== -->
+      <section id="leaderboardsScreen" class="screen" aria-labelledby="leaderboardsTitle">
+        <div class="panel wide-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">GLOBAL ON THIS BROWSER</p>
+              <h1 id="leaderboardsTitle">Leaderboards</h1>
+            </div>
+            <span class="trophy">🏆</span>
+          </div>
+
+          <div class="table-wrap">
+            <table class="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Username</th>
+                  <th>Total Score</th>
+                  <th>Highest Level</th>
+                  <th>Completed Levels</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboardBody"></tbody>
+            </table>
+          </div>
+
+          <p id="leaderboardEmpty" class="empty-state hidden">
+            No player profiles yet. Add a user to begin.
+          </p>
+
+          <button id="leaderboardsBackBtn" class="wide-btn secondary" type="button">
+            RETURN
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           GAME
+      ========================================================== -->
+      <section id="gameScreen" class="screen" aria-labelledby="gameTitle">
+        <div class="game-layout">
+          <!-- GAME HEADER -->
+          <div class="game-header">
+            <div>
+              <p class="eyebrow">BRAINBYTE // RUNTIME</p>
+              <h1 id="gameTitle">Level <span id="levelNumber">1</span></h1>
+            </div>
+
+            <div class="game-stats">
+              <span>Score <strong id="scoreValue" class="accent-text">0</strong></span>
+              <span>Lives <strong id="livesValue" class="accent-purple">♥♥♥</strong></span>
+              <span>Time <strong id="timerValue" class="accent-text">30</strong>s</span>
+            </div>
+          </div>
+
+          <!-- CHALLENGE -->
+          <div class="challenge-card">
+            <div class="challenge-meta">
+              <span id="difficultyBadge" class="difficulty-badge">EASY</span>
+              <span id="challengeType">Debug the code</span>
+            </div>
+
+            <h2 id="questionTitle">Find the bug</h2>
+            <p id="questionPrompt"></p>
+
+            <div class="code-layout">
+              <div>
+                <h3 class="accent-purple">Reference Code</h3>
+                <pre id="referenceCode" class="code-block"></pre>
+              </div>
+
+              <div>
+                <h3 class="accent-text">Debugging Code</h3>
+                <pre id="debugCode" class="code-block selectable-code" tabindex="0"></pre>
+              </div>
+            </div>
+
+            <div class="answer-area">
+              <h3 id="answerLabel">Choose the buggy line</h3>
+              <div id="answerOptions" class="answer-options"></div>
+            </div>
+
+            <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+
+            <div class="game-actions">
+              <button id="hintBtn" class="small-btn secondary" type="button">HINT</button>
+              <button id="checkAnswerBtn" class="small-btn primary" type="button">CHECK ANSWER</button>
+              <button id="nextLevelBtn" class="small-btn primary hidden" type="button">NEXT LEVEL</button>
+            </div>
+          </div>
+
+          <!-- GAME FOOTER -->
+          <div class="game-footer">
+            <button id="pauseBtn" class="text-btn" type="button">PAUSE</button>
+            <button id="restartBtn" class="text-btn" type="button">RESTART LEVEL</button>
+            <button id="gameMenuBtn" class="text-btn" type="button">RETURN TO MAIN MENU</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           PAUSE OVERLAY & MODALS
+      ========================================================== -->
+      <div id="pauseOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+        <div class="modal">
+          <p class="eyebrow">SYSTEM PAUSED</p>
+          <h2 id="pauseTitle">Take a breather</h2>
+          <p>Your current level state is preserved in memory.</p>
+          <div class="modal-actions">
+            <button id="resumeBtn" class="wide-btn primary" type="button">RESUME</button>
+            <button id="pauseMenuBtn" class="wide-btn secondary" type="button">MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="modalOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+        <div class="modal">
+          <h2 id="modalTitle">Confirm Execute</h2>
+          <p id="modalMessage"></p>
+          <div id="modalBody"></div>
+          <div class="modal-actions">
+            <button id="modalCancel" class="wide-btn secondary" type="button">CANCEL</button>
+            <button id="modalConfirm" class="wide-btn primary" type="button">CONFIRM</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOAST -->
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    </main>
+  </div>
+
+  <script src="../question.js"></script>
+  <script src="../script.js"></script>
+</body>
+</html>
