@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://btp6lelotf4ua"]
+
+[ext_resource type="Script" uid="uid://d0sqq63adthbc" path="res://house.gd" id="1_hfkix"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_metfq"]
+size = Vector2(16, 8)
+
+[node name="House" type="Node2D" unique_id=1186460443]
+script = ExtResource("1_hfkix")
+level_to_open = null
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=272456030]
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=1025867566]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D" unique_id=18054527]
+
+[node name="DoorArea" type="Area2D" parent="." unique_id=127677852]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DoorArea" unique_id=240597940]
+position = Vector2(0, 4)
+shape = SubResource("RectangleShape2D_metfq")

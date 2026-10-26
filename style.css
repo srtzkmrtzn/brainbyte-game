@@ -75,7 +75,7 @@ button:focus-visible, input:focus-visible {
 
 
 /* =========================================================
-   SCREENS
+SCREENS
 ========================================================= */
 .screen {
   display: none;
@@ -96,7 +96,7 @@ button:focus-visible, input:focus-visible {
 
 .menu-card {
   width: min(2000px, 100%);
-  min-height: 700px;
+  min-height: 85vh; /* Increased from 700px */
   display: grid;
   grid-template-columns: 35% 65%;
   border: 2px solid var(--purple-dark);
@@ -114,7 +114,7 @@ button:focus-visible, input:focus-visible {
 
 .logo-box {
   width: 100%;
-  min-height: 140px;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -125,7 +125,7 @@ button:focus-visible, input:focus-visible {
 
 .logo-box img {
   width: 100%;
-  max-width: 3000px;
+  max-width: 3200px;
   filter: drop-shadow(0 0 5px rgba(0, 255, 65, 0.5));
 }
 
@@ -198,7 +198,7 @@ button:focus-visible, input:focus-visible {
    MENU PREVIEW
 ========================================================= */
 .menu-preview {
-  margin: 34px;
+  margin: 80px;
   border: 1px solid var(--green-dark);
   min-height: 0;
   position: relative;
@@ -210,7 +210,6 @@ button:focus-visible, input:focus-visible {
   box-shadow: inset 0 0 30px rgba(0, 255, 65, 0.15);
   perspective: 400px;
 }
-
 .preview-grid {
   position: absolute;
   width: 200%;
@@ -225,9 +224,57 @@ button:focus-visible, input:focus-visible {
   animation: cyberPlane 2s linear infinite;
   pointer-events: none;
 }
+.menu-preview-logo-screen {
+  margin: 0;
+  border: none;
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #11091c 0%, #050505 75%);
+  box-shadow: inset 0 0 30px rgba(0, 255, 65, 0.15);
+  perspective: 1000px;
+}
+.preview-grid-logo-screen {
+  position: absolute;
+  width: 200vw;
+  height: 200vh;
+  top: -25%;
+  left: -50%;
+  background:
+    linear-gradient(90deg, rgba(0, 255, 65, 0.12) 1px, transparent 1px),
+    linear-gradient(rgba(157, 0, 255, 0.12) 1px, transparent 1px);
+  background-size: 40px 40px;
+  transform: rotateX(60deg) translateY(-10%);
+  animation: cyberPlane 2s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
 
+.logo-box-main {
+  width: 66.3%;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 10px;
+}
+
+.logo-box-main img {
+  width: 100%;
+  max-width: 3000px;
+  filter: drop-shadow(0 0 5px rgba(0, 255, 65, 0.5));
+}
 .preview-grid::before,
-.preview-grid::after {
+.preview-grid::after,
+.preview-grid-logo-screen::before,
+.preview-grid-logo-screen::after {
   display: none;
 }
 
@@ -257,7 +304,7 @@ button:focus-visible, input:focus-visible {
 .version {
   position: absolute;
   right: 5%;
-  bottom: 24px;
+  bottom: 10px;
   font-size: 11px;
   color: var(--muted);
 }
@@ -307,9 +354,10 @@ h3 { font-size: 14px; margin-bottom: 8px; text-transform: uppercase;}
 }
 
 /* Options Grid */
+
 .option-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr); /* Changed from 3 to 2 columns */
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -387,7 +435,7 @@ h3 { font-size: 14px; margin-bottom: 8px; text-transform: uppercase;}
 }
 
 /* =========================================================
-   LEADERBOARD
+LEADERBOARD
 ========================================================= */
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); }
 .leaderboard-table { width: 100%; border-collapse: collapse; font-size: 13px; }

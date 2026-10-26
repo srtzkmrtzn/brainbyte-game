@@ -315,17 +315,13 @@
   // REQUIRE USER
   // =========================================================
 
-  function requireUser(actionText = "do that", onCreated = null) {
+function requireUser(actionText = "do that", onCreated = null) {
     const user = getCurrentUser();
 
     if (!user) {
-      showToast(
-        "Create or select a user before you " +
-          actionText +
-          "."
-      );
-
-      openAddUserModal(onCreated);
+      showToast("Create or select a user before you " + actionText + ".");
+      // Redirect to your logo screen (change 'index.html' if your logo screen has a different name)
+      window.location.href = 'index.html'; 
       return null;
     }
 
@@ -479,7 +475,7 @@
           "User created: " + username
         );
 
-        showScreen("optionsScreen");
+        showScreen("mainMenu");
 
         return true;
       }
@@ -502,7 +498,7 @@
     const users = userList();
 
     if (!users.length) {
-      openAddUserModal();
+     
       return;
     }
 
@@ -575,7 +571,7 @@
           "Switched to " + user.username
         );
 
-        showScreen("optionsScreen");
+        showScreen("mainMenu");
 
         return true;
       }
@@ -605,17 +601,22 @@
   // DELETE USER
   // =========================================================
 
-  function openDeleteUserModal() {
+    function openDeleteUserModal() {
     const user = requireUser(
       "delete a user"
     );
 
+    // If there is no user, requireUser already handles the redirect, so we just stop.
     if (!user) {
       return;
     }
 
     openModal({
       title: "Delete User",
+      message: `Delete "${user.username}" and all of this profile's saved progress? This cannot be undone.`,
+      confirmText: "DELETE PERMANENTLY",
+      cancelText: "KEEP USER",
+// ... rest of the function continues normally
 
       message:
         `Delete "${user.username}" and all of this profile's saved progress? This cannot be undone.`,
@@ -643,6 +644,7 @@
       }
     });
   }
+  
 
   // =========================================================
   // NEW GAME
@@ -1708,7 +1710,7 @@
     openModal({
       title: "Disconnect Session",
       message: "Are you sure you want to exit BrainByte? Your progress is automatically saved.",
-      confirmText: "SHUT DOWN",
+      confirmText: "CONFIRM",
       cancelText: "CANCEL",
       onConfirm: () => {
         // 1. Attempt to close the browser tab
@@ -1716,17 +1718,38 @@
 
         // 2. Fallback if the browser blocks window.close()
         setTimeout(() => {
-          document.body.innerHTML = `
-            <div style="height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #09090b; color: #00ff41; font-family: 'Consolas', monospace; text-align: center; padding: 20px;">
-              <h1 style="font-size: 28px; margin-bottom: 12px; color: #9d00ff; text-shadow: 0 0 10px rgba(157, 0, 255, 0.4);">[ SYSTEM TERMINATED ]</h1>
-              <p style="color: #8892b0; font-size: 14px;">Session closed safely. You may now close this browser tab.</p>
-            </div>
-          `;
+          window.location.href = '../templates/index.html'; 
         }, 150);
       }
     });
   }
+// =======================================================
+    // LOGO SCREEN / REGISTRATION
+    // =======================================================
+    
+    $("registerBtn")?.addEventListener("click", () => {
+      const input = $("newUsername");
+      const username = normalizeUsername(input ? input.value : "");
 
+      if (!isValidUsername(username)) {
+        alert("Invalid username. Use 2–20 letters, numbers, spaces, _ or -.");
+        return;
+      }
+
+      if (usernameExists(username)) {
+        alert("That username already exists.");
+        return;
+      }
+
+      // Create and save the new user
+      const profile = newProfile(username);
+      state.data.users[profile.id] = profile;
+      state.data.selectedUserId = profile.id;
+      saveData();
+
+      // Send the user to the main menu page
+      window.location.href = "main.html";
+    });
   // =========================================================
   // BIND EVENTS
   // =========================================================
@@ -1740,18 +1763,29 @@
       "click",
       continueGame
     );
-
-    $("newGameBtn")?.addEventListener(
+    $("tutorialBtn")?.addEventListener(
       "click",
-      startNewGame
+      () => {
+        showScreen("tutorialScreen");
+      }
     );
+    $("tutorialBackBtn")?.addEventListener(
+      "click",
+      () => {
+        showScreen("mainMenu");
+      }
+    )
+
 
     $("optionsBtn")?.addEventListener(
       "click",
       () => {
         showScreen("optionsScreen");
       }
+      
     );
+
+
 
     $("leaderboardsBtn")?.addEventListener(
       "click",
@@ -1763,6 +1797,14 @@
         );
       }
     );
+    $("creditsBtn")?.addEventListener(
+      "click", () => {
+    showScreen("creditsScreen");
+    });
+
+    $("creditsBackBtn")?.addEventListener("click", () => {
+    showScreen("mainMenu");
+    });
 
     $("exitBtn")?.addEventListener(
       "click",
@@ -1773,10 +1815,6 @@
     // OPTIONS
     // =======================================================
 
-    $("addUserBtn")?.addEventListener(
-      "click",
-      openAddUserModal
-    );
 
     $("changeUserBtn")?.addEventListener(
       "click",
@@ -1956,14 +1994,12 @@
   // INITIALIZE
   // =========================================================
 
-  function initialize() {
-    bindEvents();
+function initialize() {
+  bindEvents();
+  updateHeader();
+  showScreen("mainMenu");
 
-    updateHeader();
-
-    showScreen("mainMenu");
-  }
-
+}
   // =========================================================
   // START
   // =========================================================
