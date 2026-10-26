@@ -1718,7 +1718,7 @@ function requireUser(actionText = "do that", onCreated = null) {
 
         // 2. Fallback if the browser blocks window.close()
         setTimeout(() => {
-          window.location.href = '../templates/index.html'; 
+          window.location.href = '../index.html'; 
         }, 150);
       }
     });
