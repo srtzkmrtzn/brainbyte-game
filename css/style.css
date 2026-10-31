@@ -268,7 +268,9 @@ SCREENS
 
 .logo-box-main img {
   width: 100%;
-  max-width: 3000px;
+  max-width: 1000px; /* Reduced from 3000px to a more sensible maximum */
+  max-height: 80vh; /* This ensures the logo never takes up more than 45% of the screen height */
+  object-fit: contain; /* Keeps the logo proportions correct */
   filter: drop-shadow(0 0 5px rgba(0, 255, 65, 0.5));
 }
 .preview-grid::before,
@@ -649,4 +651,48 @@ LEADERBOARD
   .game-actions, .modal-actions { flex-direction: column; }
   .game-footer { flex-direction: column; gap: 6px; }
   .game-footer .text-btn { width: 100%; }
+}
+
+/* =========================================================
+   SPOT THE DIFFERENCE MODE
+========================================================= */
+.code-line, .ref-line {
+  display: flex;
+  padding: 2px 8px;
+  margin: 0 -8px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+.ref-line {
+  cursor: default;
+}
+.code-line {
+  cursor: pointer;
+}
+.code-line:hover {
+  background: rgba(0, 255, 65, 0.15);
+}
+.code-line.bug-found {
+  background: rgba(255, 51, 51, 0.15);
+  border-left: 3px solid var(--red);
+  color: var(--red);
+}
+.code-line.bug-wrong {
+  animation: flashRedLine 0.4s;
+}
+.line-num {
+  color: var(--muted);
+  min-width: 25px;
+  text-align: right;
+  margin-right: 15px;
+  user-select: none;
+  opacity: 0.5;
+}
+.line-content {
+  white-space: pre;
+}
+
+@keyframes flashRedLine {
+  0%, 100% { background: transparent; }
+  50% { background: rgba(255, 51, 51, 0.5); }
 }

@@ -54,7 +54,7 @@
               </button>
               <button id="optionsBtn" class="menu-btn" type="button">
                 <span class="btn-icon">⚙</span>
-                PLAYER OPTIONS
+                OPTIONS
               </button>
 
 
@@ -67,6 +67,10 @@
               <button id="creditsBtn" class="menu-btn" type="button">
                 <span class="btn-icon">©</span>
                 CREDITS
+              </button>
+              <button id="adminBtn" class="menu-btn hidden" type="button">
+                <span class="btn-icon">🛡️</span>
+                ADMIN DASHBOARD
               </button>
 
               <button id="exitBtn" class="menu-btn danger" type="button">
@@ -93,7 +97,7 @@
 
       </section>
 
-      <!-- =========================================================
+<!-- =========================================================
       OPTIONS
       ========================================================== -->
 
@@ -109,24 +113,9 @@
             </div>
           </div>
 
-          <div class="option-grid">
-          
-
-            <button id="changeUserBtn" class="feature-card" type="button">
-              <span class="feature-icon">⇄</span>
-              <span>
-                <strong>CHANGE USER</strong>
-                <small>Switch to another profile</small>
-              </span>
-            </button>
-
-            <button id="deleteUserBtn" class="feature-card danger-card" type="button">
-              <span class="feature-icon">⌫</span>
-              <span>
-                <strong>DELETE USER</strong>
-                <small>Delete saved progress permanently</small>
-              </span>
-            </button>
+          <!-- changeUserBtn has been removed -->
+          <div class="option-grid" style="grid-template-columns: 1fr;">
+          <!-- Future options can go here -->
           </div>
 
           <button id="optionsBackBtn" class="wide-btn secondary" type="button">
@@ -134,7 +123,44 @@
           </button>
         </div>
       </section>
+<!-- =========================================================
+      ADMIN DASHBOARD
+      ========================================================== -->
+      <section id="adminScreen" class="screen" aria-labelledby="adminTitle">
+        <div class="panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">SYSTEM OVERRIDE</p>
+              <h1 id="adminTitle">Admin Dashboard</h1>
+            </div>
+            <span class="trophy">🛡️</span>
+          </div>
 
+<div class="option-grid" style="grid-template-columns: 1fr;">
+            <!-- Your existing delete user button -->
+            <button id="adminDeleteUserBtn" class="feature-card danger-card" type="button">
+              <span class="feature-icon">⌫</span>
+              <span>
+                <strong>MANAGE & DELETE PLAYERS</strong>
+                <small>Permanently erase user profiles and save data</small>
+              </span>
+            </button>
+
+            <!-- NEW: Delete ALL users button -->
+            <button id="adminDeleteAllBtn" class="feature-card danger-card" type="button" style="border-color: var(--red);">
+              <span class="feature-icon">⚠</span>
+              <span>
+                <strong>NUKE DATABASE (DELETE ALL)</strong>
+                <small>Permanently erase ALL users and their progress</small>
+              </span>
+            </button>
+          </div>
+
+          <button id="adminBackBtn" class="wide-btn secondary" type="button">
+            RETURN TO MENU
+          </button>
+        </div>
+      </section>
       <!-- =========================================================
       LEADERBOARDS
       ========================================================== -->
@@ -215,16 +241,23 @@
             <span class="trophy">📖</span>
           </div>
 
-          <div style="line-height: 1.6; color: var(--muted); margin-bottom: 24px;">
+      <div style="line-height: 1.6; color: var(--muted); margin-bottom: 24px;">
             <h3 class="accent-green">Objective</h3>
-            <p style="margin-bottom: 15px;">You are tasked with fixing broken code. Analyze the <strong class="accent-purple">Reference Code</strong> to understand how it should work, and find the bug in the <strong class="accent-text">Debugging Code</strong>.</p>
+            <p style="margin-bottom: 15px;">
+              You are tasked with finding and fixing broken code. 
+              <br><br>
+              ⌨️ <strong>Code Debugging Mode:</strong> Analyze the broken code and select the single buggy line from the multiple-choice options.
+              <br><br>
+              🔍 <strong>Spot the Difference Mode:</strong> Compare the <strong class="accent-purple">Reference Code</strong> to the <strong class="accent-text">Debugging Code</strong>. Click directly on the lines in the Debugging Code that have been altered or broken to highlight them, then submit!
+            </p>
             
             <h3 class="accent-purple">Game Mechanics</h3>
             <ul style="margin-left: 20px; padding-left: 0;">
+              <li style="margin-bottom: 8px;"><strong>Submitting Answers:</strong> In Spot the Difference, you must find ALL the bugs before clicking <em>Check Answer</em>. If you highlight a line that doesn't actually have a bug, you will be penalized!</li>
               <li style="margin-bottom: 8px;"><strong>Timer:</strong> Each level has a time limit. If the time runs out, you lose a life.</li>
-              <li style="margin-bottom: 8px;"><strong>Lives (♥♥♥):</strong> You start with 3 lives. If you select a wrong answer or run out of time, you lose one. Lose all 3, and it's Game Over!</li>
+              <li style="margin-bottom: 8px;"><strong>Lives (♥♥♥):</strong> You start with 3 lives. If you select a wrong answer, select an incorrect line, or run out of time, you lose one. Lose all 3, and it's Game Over!</li>
               <li style="margin-bottom: 8px;"><strong>Scoring:</strong> Earn 100 points for a correct answer, plus bonus points based on how much time is left on the clock.</li>
-              <li><strong>Hints:</strong> Stuck? Use the Hint button, but be careful as the clock keeps ticking!</li>
+              <li><strong>Hints:</strong> Stuck? Use the Hint button to get a clue, but be careful as the clock keeps ticking!</li>
             </ul>
           </div>
 
@@ -233,6 +266,7 @@
           </button>
         </div>
       </section>
+      
 
 <!-- =========================================================
 GAME
@@ -264,12 +298,12 @@ GAME
             <p id="questionPrompt"></p>
 
             <div class="code-layout">
-              <div>
+              <div id="referenceBox">
                 <h3 class="accent-purple">Reference Code</h3>
                 <pre id="referenceCode" class="code-block"></pre>
               </div>
 
-              <div>
+              <div id="debugBox">
                 <h3 class="accent-text">Debugging Code</h3>
                 <pre id="debugCode" class="code-block selectable-code" tabindex="0"></pre>
               </div>

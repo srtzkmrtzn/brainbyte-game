@@ -23,7 +23,7 @@
   // GAME STATE
   // =========================================================
 
-  const state = {
+const state = {
     data: loadData(),
     screen: "mainMenu",
     currentQuestion: null,
@@ -31,7 +31,10 @@
     timerId: null,
     timeLeft: LEVEL_TIME,
     paused: false,
-    answerLocked: false
+    answerLocked: false,
+    gameMode: "codeDebug",
+    language: "python", // NEW
+    bugsFound: []
   };
 
   // =========================================================
@@ -123,7 +126,7 @@
   // CREATE PROFILE
   // =========================================================
 
-  function newProfile(username) {
+function newProfile(username) {
     const now = new Date().toISOString();
 
     return {
@@ -135,13 +138,14 @@
 
       totalScore: 0,
       bestScore: 0,
-
       lives: DEFAULT_LIVES,
-
       currentLevelScore: 0,
 
-      gameState: "ready",
+      // ADD THESE TWO LINES:
+      gameMode: "codeDebug",
+      language: "python",
 
+      gameState: "ready",
       lastSave: now,
       createdAt: now
     };
@@ -263,7 +267,7 @@
         : "No save yet";
     }
 
-    if ($("continueBtn")) {
+ if ($("continueBtn")) {
       $("continueBtn").disabled = !user;
 
       $("continueBtn").title = user
@@ -272,6 +276,22 @@
 
       $("continueBtn").style.opacity =
         user ? "1" : ".55";
+
+      // Dynamically change text based on user progress
+      if (user) {
+        const hasProgress = 
+          user.totalScore > 0 || 
+          user.completedLevels.length > 0 || 
+          user.currentLevel > 1;
+          
+        if (hasProgress) {
+          $("continueBtn").innerHTML = '<span class="btn-icon">▶</span> CONTINUE';
+        } else {
+          $("continueBtn").innerHTML = '<span class="btn-icon">▶</span> NEW GAME';
+        }
+      } else {
+        $("continueBtn").innerHTML = '<span class="btn-icon">▶</span> CONTINUE';
+      }
     }
   }
 
@@ -490,7 +510,7 @@ function requireUser(actionText = "do that", onCreated = null) {
     }, 50);
   }
 
-  // =========================================================
+// =========================================================
   // CHANGE USER
   // =========================================================
 
@@ -498,7 +518,7 @@ function requireUser(actionText = "do that", onCreated = null) {
     const users = userList();
 
     if (!users.length) {
-     
+      showToast("No users found. Please register first.")
       return;
     }
 
@@ -509,14 +529,9 @@ function requireUser(actionText = "do that", onCreated = null) {
             (user) => `
               <button
                 class="user-choice ${
-                  user.id ===
-                  state.data.selectedUserId
-                    ? "selected"
-                    : ""
+                  user.id === state.data.selectedUserId ? "selected" : ""
                 }"
-                data-user-id="${escapeHtml(
-                  user.id
-                )}"
+                data-user-id="${escapeHtml(user.id)}"
                 type="button"
               >
                 <span>
@@ -538,114 +553,211 @@ function requireUser(actionText = "do that", onCreated = null) {
 
     openModal({
       title: "Change User",
-
-      message:
-        "Select the profile you want to use.",
-
+      message: "Select the profile you want to use.",
       body,
-
       confirmText: "SELECT USER",
-
       onConfirm: () => {
-        const selected =
-          document.querySelector(
-            ".user-choice.selected"
-          );
+        const selected = document.querySelector(".user-choice.selected");
 
         if (!selected) {
-          showToast(
-            "Select a user first."
-          );
-
+          showToast("Select a user first.");
           return false;
         }
 
-        state.data.selectedUserId =
-          selected.dataset.userId;
-
+        state.data.selectedUserId = selected.dataset.userId;
         saveData();
 
         const user = getCurrentUser();
+        showToast("Switched to " + user.username);
 
-        showToast(
-          "Switched to " + user.username
-        );
-
-        showScreen("mainMenu");
+        if (window.location.pathname.includes("index.html") || window.location.pathname === "/") {
+          window.location.href = "main.html";
+        } else {
+          showScreen("mainMenu");
+        }
 
         return true;
       }
     });
 
-    document
-      .querySelectorAll(".user-choice")
-      .forEach((button) => {
-        button.addEventListener(
-          "click",
-          () => {
-            document
-              .querySelectorAll(".user-choice")
-              .forEach((b) => {
-                b.classList.remove(
-                  "selected"
-                );
-              });
-
-            button.classList.add("selected");
-          }
-        );
+    document.querySelectorAll(".user-choice").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".user-choice").forEach((b) => {
+          b.classList.remove("selected");
+        });
+        button.classList.add("selected");
       });
+    });
+  }
+// =========================================================
+  // ADMIN DELETE USER
+  // =========================================================
+  function openAdminDeleteModal() {
+    const users = userList();
+
+    if (!users.length) {
+      showToast("No users exist.");
+      return;
+    }
+
+    const body = `
+      <div class="user-list">
+        ${users.map((user) => `
+            <button class="user-choice" data-delete-id="${escapeHtml(user.id)}" type="button" style="border-color: var(--red);">
+              <span>${escapeHtml(user.username)}</span>
+              <small style="color: var(--red);">DELETE</small>
+            </button>
+          `).join("")}
+      </div>
+    `;
+
+    openModal({
+      title: "Delete Player Profiles",
+      message: "Warning: Deleting a player cannot be undone.",
+      body,
+      confirmText: "CLOSE",
+      showCancel: false
+    });
+
+    document.querySelectorAll("[data-delete-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.deleteId;
+        const userToDelete = state.data.users[id];
+
+        if (confirm(`Permanently delete ${userToDelete.username}?`)) {
+          delete state.data.users[id];
+
+          if (state.data.selectedUserId === id) {
+            const remaining = userList();
+            state.data.selectedUserId = remaining[0]?.id || null;
+          }
+
+          saveData();
+          showToast(`Deleted ${userToDelete.username}.`);
+          closeModal();
+        }
+      });
+    });
   }
 
+// =========================================================
+  // ADMIN DELETE ALL USERS
   // =========================================================
-  // DELETE USER
-  // =========================================================
+  function openAdminDeleteAllModal() {
+    const users = userList();
 
-    function openDeleteUserModal() {
-    const user = requireUser(
-      "delete a user"
-    );
-
-    // If there is no user, requireUser already handles the redirect, so we just stop.
-    if (!user) {
+    if (!users.length) {
+      showToast("Database is already empty. No users exist.");
       return;
     }
 
     openModal({
-      title: "Delete User",
-      message: `Delete "${user.username}" and all of this profile's saved progress? This cannot be undone.`,
-      confirmText: "DELETE PERMANENTLY",
-      cancelText: "KEEP USER",
-// ... rest of the function continues normally
-
-      message:
-        `Delete "${user.username}" and all of this profile's saved progress? This cannot be undone.`,
-
-      confirmText:
-        "DELETE PERMANENTLY",
-
-      cancelText: "KEEP USER",
-
+      title: "NUKE DATABASE",
+      message: "CRITICAL WARNING: This will permanently delete ALL player profiles, scores, and save data. This action cannot be undone.",
+      confirmText: "DELETE EVERYTHING",
+      cancelText: "CANCEL",
       onConfirm: () => {
-        const id = user.id;
-
-        delete state.data.users[id];
-
-        const remaining = userList();
-
-        state.data.selectedUserId =
-          remaining[0]?.id || null;
-
+        // Erase all users from the game state
+        state.data.users = {};
+        state.data.selectedUserId = null;
+        
         saveData();
+        showToast("Database wiped. All users deleted.");
+        
+        // Boot the user back to the logo/login screen since no profiles exist
+        setTimeout(() => {
+          if (window.location.pathname.includes("main.html")) {
+            window.location.href = "index.html";
+          }
+        }, 1000);
 
-        showToast("User deleted.");
-
-        showScreen("optionsScreen");
+        return true;
       }
     });
   }
   
+// =========================================================
+  // MODE SELECTION MODAL
+  // =========================================================
+function openModeSelectionModal() {
+    openModal({
+      title: "Select Game Mode",
+      message: "Choose your challenge type for this session.",
+      body: `
+        <div class="option-grid" style="grid-template-columns: 1fr; gap: 12px; margin-bottom: 0;">
+          <button id="modeCodeDebug" class="feature-card" type="button" style="min-height: 80px;">
+            <span class="feature-icon">⌨</span>
+            <span><strong>CODE DEBUGGING</strong></span>
+          </button>
+          <button id="modeSpotDiff" class="feature-card" type="button" style="min-height: 80px;">
+            <span class="feature-icon">🔍</span>
+            <span><strong>SPOT THE DIFFERENCE</strong></span>
+          </button>
+        </div>
+      `,
+      confirmText: "CANCEL",
+      showCancel: false
+    });
 
+    if ($("modeCodeDebug")) {
+      $("modeCodeDebug").onclick = () => {
+        const user = getCurrentUser();
+        user.gameMode = "codeDebug";
+        saveData(); // Save to local storage
+        openLanguageSelectionModal();
+      };
+    }
+
+    if ($("modeSpotDiff")) {
+      $("modeSpotDiff").onclick = () => {
+        const user = getCurrentUser();
+        user.gameMode = "spotDiff";
+        saveData(); // Save to local storage
+        openLanguageSelectionModal();
+      };
+    }
+  }
+  function openLanguageSelectionModal() {
+    openModal({
+      title: "Select Language",
+      message: "Choose the programming language for this run.",
+      body: `
+        <div class="option-grid" style="grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 0;">
+          <button class="feature-card lang-btn" data-lang="python" type="button" style="min-height: 80px;">
+            <span class="feature-icon">🐍</span>
+            <span><strong>PYTHON</strong></span>
+          </button>
+          
+          <button class="feature-card lang-btn" data-lang="cpp" type="button" style="min-height: 80px;">
+            <span class="feature-icon">⚙️</span>
+            <span><strong>C++</strong></span>
+          </button>
+
+          <button class="feature-card lang-btn" data-lang="java" type="button" style="min-height: 80px;">
+            <span class="feature-icon">☕</span>
+            <span><strong>JAVA</strong></span>
+          </button>
+
+          <button class="feature-card lang-btn" data-lang="web" type="button" style="min-height: 80px;">
+            <span class="feature-icon">🌐</span>
+            <span><strong>HTML/CSS/JS</strong></span>
+          </button>
+        </div>
+      `,
+      confirmText: "CANCEL",
+      showCancel: false
+    });
+
+    document.querySelectorAll(".lang-btn").forEach(btn => {
+      btn.onclick = () => {
+        const user = getCurrentUser();
+        user.language = btn.dataset.lang;
+        saveData(); // Save to local storage
+        closeModal();
+        goToWorld(); 
+      };
+    });
+  }
   // =========================================================
   // NEW GAME
   // =========================================================
@@ -737,28 +849,37 @@ function requireUser(actionText = "do that", onCreated = null) {
       )
     );
   }
+  function goToWorld() {
+  const user = requireUser("play");
+  if (!user) return;
+
+  user.gameState = "playing";
+  touchSave(user);
+  saveData();
+
+  window.location.href = "game.html";
+}
 
   // =========================================================
   // GET QUESTION
   // =========================================================
 
-  function getQuestionForLevel(level) {
-    if (
-      typeof QUESTION_BANK === "undefined" ||
-      !Array.isArray(QUESTION_BANK)
-    ) {
-      console.error(
-        "QUESTION_BANK is missing."
-      );
+function getQuestionForLevel(level) {
+    const user = getCurrentUser();
+    if (!user) return null;
 
-      return null;
+    // CRASH PREVENTION: Safely check for the banks
+    let bank = [];
+    if (user.gameMode === "spotDiff" && typeof SPOT_DIFF_BANK !== "undefined") {
+      bank = SPOT_DIFF_BANK;
+    } else if (typeof QUESTION_BANK !== "undefined") {
+      bank = QUESTION_BANK;
     }
+    
+    const langBank = bank.filter(q => q.language === user.language);
+    const finalBank = langBank.length > 0 ? langBank : bank;
 
-    return (
-      QUESTION_BANK.find(
-        (q) => q.level === level
-      ) || null
-    );
+    return finalBank.find((q) => q.level === level) || null;
   }
 
   // =========================================================
@@ -899,93 +1020,146 @@ function requireUser(actionText = "do that", onCreated = null) {
         q.prompt;
     }
 
-    if ($("referenceCode")) {
-      $("referenceCode").textContent =
-        q.referenceCode;
-    }
+if (user.gameMode === "spotDiff") {
+      // SPOT THE DIFFERENCE MODE: Show Reference Code & Split to 2 Columns
+      $("referenceBox")?.classList.remove("hidden");
+      if ($("codeLayout")) $("codeLayout").style.gridTemplateColumns = "1fr 1fr";
 
-    if ($("debugCode")) {
-      $("debugCode").textContent =
-        q.debugCode;
-    }
+      $("answerOptions")?.classList.add("hidden");
+      $("checkAnswerBtn")?.classList.add("hidden");
+      
+      state.bugsFound = [];
+      if ($("answerLabel")) $("answerLabel").textContent = `BUGS FOUND: 0 / ${q.bugLines.length}`;
 
-    if ($("answerOptions")) {
-      $("answerOptions").innerHTML =
-        q.answers
-          .map(
-            (answer, index) => `
-              <button
-                type="button"
-                class="answer-option"
-                data-answer="${index}"
-              >
-                ${escapeHtml(answer)}
-              </button>
-            `
-          )
-          .join("");
-    }
+      const renderLines = (codeStr, isInteractive) => {
+        return codeStr.split('\n').map((line, idx) => 
+          `<div class="${isInteractive ? 'code-line' : 'ref-line'}" data-line="${idx}"><span class="line-num">${idx + 1}</span><span class="line-content">${escapeHtml(line)}</span></div>`
+        ).join('');
+      };
 
+      if ($("referenceCode")) $("referenceCode").innerHTML = renderLines(q.referenceCode, false);
+      if ($("debugCode")) {
+        $("debugCode").innerHTML = renderLines(q.debugCode, true);
+        // Reset to default smaller size for split-screen
+        $("debugCode").style.minHeight = "190px"; 
+        $("debugCode").style.fontSize = "14px";
+      }
+
+      // Handle Line Clicks
+      document.querySelectorAll(".code-line").forEach(lineEl => {
+        lineEl.addEventListener("click", () => {
+          if (state.answerLocked || state.paused) return;
+          const lineIdx = Number(lineEl.dataset.line);
+
+          if (state.bugsFound.includes(lineIdx)) return;
+
+          if (q.bugLines.includes(lineIdx)) {
+            state.bugsFound.push(lineIdx);
+            lineEl.classList.add("bug-found");
+            if ($("answerLabel")) $("answerLabel").textContent = `BUGS FOUND: ${state.bugsFound.length} / ${q.bugLines.length}`;
+            setFeedback("Bug spotted!", "success");
+
+            // Win Condition
+            if (state.bugsFound.length === q.bugLines.length) {
+              state.answerLocked = true;
+              stopTimer();
+              const earned = POINTS_CORRECT + Math.max(0, state.timeLeft) * POINTS_SPEED_BONUS;
+              user.currentLevelScore = earned;
+              user.totalScore += earned;
+              user.bestScore = Math.max(user.bestScore, user.totalScore);
+              
+              if (!user.completedLevels.includes(q.level)) user.completedLevels.push(q.level);
+              user.completedLevels.sort((a, b) => a - b);
+              
+              const activeBank = user.gameMode === "spotDiff" ? SPOT_DIFF_BANK : QUESTION_BANK;
+              const langBank = activeBank.filter(question => question.language === user.language);
+              user.currentLevel = Math.min(q.level + 1, langBank.length + 1);
+              
+              user.gameState = "level-complete";
+              touchSave(user); saveData(); renderLives();
+              
+              setFeedback(`All bugs found! +${earned} points. ${q.explanation || ''}`, "success");
+              $("nextLevelBtn")?.classList.remove("hidden");
+            }
+          } else {
+            // Wrong line logic
+            lineEl.classList.add("bug-wrong");
+            setTimeout(() => lineEl.classList.remove("bug-wrong"), 400);
+
+            user.lives = Math.max(0, Number(user.lives || 0) - 1);
+            touchSave(user); saveData(); renderLives();
+            setFeedback("Incorrect! No bug on this line.", "error");
+
+            if (user.lives <= 0) {
+              state.answerLocked = true;
+              stopTimer();
+              setTimeout(() => gameOverReset(), 500);
+            } else {
+              state.answerLocked = true;
+              stopTimer();
+              setTimeout(() => openRetryModal("Incorrect Line", `You lost a heart. ${user.lives} remaining.`), 150);
+            }
+          }
+        });
+      });
+
+    } else {
+      // CODE DEBUGGING MODE: Hide Reference Code & Expand to 1 Column
+      $("referenceBox")?.classList.add("hidden");
+      if ($("codeLayout")) $("codeLayout").style.gridTemplateColumns = "1fr";
+
+      $("answerOptions")?.classList.remove("hidden");
+      $("checkAnswerBtn")?.classList.remove("hidden");
+      if ($("answerLabel")) $("answerLabel").textContent = "Choose the buggy line";
+      
+      if ($("referenceCode")) $("referenceCode").textContent = q.referenceCode;
+      
+      if ($("debugCode")) {
+        $("debugCode").textContent = q.debugCode;
+        // Make the panel significantly taller and the text larger for 1-column mode
+        $("debugCode").style.minHeight = "350px";
+        $("debugCode").style.minWidth = "1100px";
+        $("debugCode").style.fontSize = "16px";
+      }
+      
+      if ($("answerOptions")) {
+        $("answerOptions").innerHTML = q.answers.map((answer, index) => `
+          <button type="button" class="answer-option" data-answer="${index}">
+            ${escapeHtml(answer)}
+          </button>
+        `).join("");
+      }
+      
+      document.querySelectorAll(".answer-option").forEach((button) => {
+        button.addEventListener("click", () => {
+            if (state.answerLocked || state.paused) return;
+            state.selectedAnswer = Number(button.dataset.answer);
+            document.querySelectorAll(".answer-option").forEach((b) => b.classList.remove("selected"));
+            button.classList.add("selected");
+        });
+      });
+    }
+    // --- PUT THIS AT THE VERY END OF renderQuestion() ---
+
+    // 1. Clear old feedback messages
     if ($("feedback")) {
       $("feedback").textContent = "";
-      $("feedback").className =
-        "feedback";
+      $("feedback").className = "feedback";
     }
 
-    if ($("checkAnswerBtn")) {
-      $("checkAnswerBtn").classList.remove(
-        "hidden"
-      );
-    }
-
+    // 2. Hide the Next Level button until they answer correctly
     if ($("nextLevelBtn")) {
-      $("nextLevelBtn").classList.add(
-        "hidden"
-      );
-
-      $("nextLevelBtn").textContent =
-        "NEXT LEVEL";
+      $("nextLevelBtn").classList.add("hidden");
+      $("nextLevelBtn").textContent = "NEXT LEVEL";
     }
 
+    // 3. Re-enable the Hint button
     if ($("hintBtn")) {
       $("hintBtn").disabled = false;
     }
+  } // <-- This is the final closing bracket of renderQuestion()
 
-    document
-      .querySelectorAll(".answer-option")
-      .forEach((button) => {
-        button.addEventListener(
-          "click",
-          () => {
-            if (
-              state.answerLocked ||
-              state.paused
-            ) {
-              return;
-            }
 
-            state.selectedAnswer =
-              Number(
-                button.dataset.answer
-              );
-
-            document
-              .querySelectorAll(
-                ".answer-option"
-              )
-              .forEach((b) => {
-                b.classList.remove(
-                  "selected"
-                );
-              });
-
-            button.classList.add(
-              "selected"
-            );
-          }
-        );
-      });
-  }
 
   // =========================================================
   // TIMER
@@ -1220,119 +1394,147 @@ function requireUser(actionText = "do that", onCreated = null) {
     state.answerLocked = true;
     stopTimer();
 
+// =========================================================
+  // CHECK ANSWER
+  // =========================================================
+
+  function checkAnswer() {
+    const user = getCurrentUser();
+    const q = state.currentQuestion;
+
+    if (!user || !q) return;
+    
+    // Spot the Difference logic is handled inside renderQuestion(), so exit early here
+    if (user.gameMode === "spotDiff") return; 
+
+    if (state.answerLocked) return;
+
+    if (state.selectedAnswer === null) {
+      showToast("Choose an answer first.");
+      return;
+    }
+
+    state.answerLocked = true;
+    stopTimer();
+
+    // Determine the active bank and filter by language to get the true max level
+    const activeBank = user.gameMode === "spotDiff" ? SPOT_DIFF_BANK : QUESTION_BANK;
+    const langBank = activeBank.filter(question => question.language === user.language);
+
     // =======================================================
     // CORRECT ANSWER
     // =======================================================
-
-    if (
-      state.selectedAnswer ===
-      q.answerIndex
-    ) {
-      const bonus =
-        Math.max(
-          0,
-          state.timeLeft
-        ) * POINTS_SPEED_BONUS;
-
-      const earned =
-        POINTS_CORRECT + bonus;
+    if (state.selectedAnswer === q.answerIndex) {
+      const bonus = Math.max(0, state.timeLeft) * POINTS_SPEED_BONUS;
+      const earned = POINTS_CORRECT + bonus;
 
       user.currentLevelScore = earned;
-
       user.totalScore += earned;
+      user.bestScore = Math.max(user.bestScore, user.totalScore);
 
-      user.bestScore = Math.max(
-        user.bestScore,
-        user.totalScore
-      );
-
-      if (
-        !user.completedLevels.includes(
-          q.level
-        )
-      ) {
-        user.completedLevels.push(
-          q.level
-        );
+      if (!user.completedLevels.includes(q.level)) {
+        user.completedLevels.push(q.level);
       }
+      user.completedLevels.sort((a, b) => a - b);
 
-      user.completedLevels.sort(
-        (a, b) => a - b
-      );
+// Inside checkAnswer() -> CORRECT ANSWER section:
 
-      // IMPORTANT:
-      // The next level is q.level + 1.
-      user.currentLevel = Math.min(
-        q.level + 1,
-        QUESTION_BANK.length + 1
-      );
-
-      user.gameState =
-        "level-complete";
+      // IMPORTANT: Cap the next level at 3 (since each house has 3 questions)
+      const MAX_QUESTIONS = 3;
+      user.currentLevel = Math.min(q.level + 1, MAX_QUESTIONS + 1);
+      user.gameState = "level-complete";
 
       touchSave(user);
       saveData();
-
       renderLives();
 
-      setFeedback(
-        `Correct! +${earned} points. ${q.explanation}`,
-        "success"
-      );
+      setFeedback(`Correct! +${earned} points. ${q.explanation || ""}`, "success");
 
-      if ($("checkAnswerBtn")) {
-        $("checkAnswerBtn").classList.add(
-          "hidden"
-        );
-      }
+      if ($("checkAnswerBtn")) $("checkAnswerBtn").classList.add("hidden");
 
       if ($("nextLevelBtn")) {
-        $("nextLevelBtn").classList.remove(
-          "hidden"
-        );
-
-        if (
-          q.level >=
-          QUESTION_BANK.length
-        ) {
-          $("nextLevelBtn").textContent =
-            "FINISH GAME";
+        $("nextLevelBtn").classList.remove("hidden");
+        // Change text to FINISH GAME if they beat question 3
+        if (q.level >= MAX_QUESTIONS) {
+          $("nextLevelBtn").textContent = "FINISH GAME";
         } else {
-          $("nextLevelBtn").textContent =
-            "NEXT LEVEL";
+          $("nextLevelBtn").textContent = "NEXT LEVEL";
         }
       }
-
       return;
     }
 
     // =======================================================
     // WRONG ANSWER
     // =======================================================
-
-    user.lives = Math.max(
-      0,
-      Number(user.lives || 0) - 1
-    );
-
-    user.gameState =
-      "answer-incorrect";
+    user.lives = Math.max(0, Number(user.lives || 0) - 1);
+    user.gameState = "answer-incorrect";
 
     touchSave(user);
     saveData();
-
     renderLives();
 
-    setFeedback(
-      `Not quite. You lost one life. ${q.explanation}`,
-      "error"
-    );
+    setFeedback(`Not quite. You lost one life. ${q.explanation}`, "error");
 
-    if ($("checkAnswerBtn")) {
-      $("checkAnswerBtn").classList.add(
-        "hidden"
-      );
+    if ($("checkAnswerBtn")) $("checkAnswerBtn").classList.add("hidden");
+
+    if (user.lives <= 0) {
+      setTimeout(() => gameOverReset(), 150);
+      return;
     }
+
+    $("nextLevelBtn")?.classList.add("hidden");
+    setTimeout(() => openRetryModal("Incorrect Answer", `You lost one heart. You have ${user.lives} heart${user.lives === 1 ? "" : "s"} remaining.`), 150);
+  }
+
+  // =========================================================
+  // NEXT LEVEL
+  // =========================================================
+
+  function nextLevel() {
+    const user = requireUser("continue");
+    if (!user) return;
+
+    const q = state.currentQuestion;
+    if (!q) return;
+
+    // Determine which bank we are using based on saved user profile
+    const bank = user.gameMode === "spotDiff" ? SPOT_DIFF_BANK : QUESTION_BANK;
+    // Filter questions by the selected language
+    const langBank = bank.filter(question => question.language === user.language);
+
+    if (q.level >= langBank.length) {
+      user.gameState = "complete";
+      user.currentLevel = langBank.length + 1; 
+
+      touchSave(user);
+      saveData();
+      
+      showToast("All levels completed for this language!");
+      renderLeaderboard();
+      showScreen("leaderboardsScreen");
+      return;
+    }
+
+    // =======================================================
+    // ADVANCE TO NEXT LEVEL
+    // =======================================================
+
+    const nextLevelNumber = q.level + 1;
+    const nextQuestion = getQuestionForLevel(nextLevelNumber);
+
+    // Failsafe in case a level is missing in question.js
+    if (!nextQuestion) {
+      user.gameState = "complete";
+      touchSave(user);
+      saveData();
+      renderLeaderboard();
+      showScreen("leaderboardsScreen");
+      return;
+    }
+
+    startLevel(nextLevelNumber);
+  }
 
     // =======================================================
     // LAST HEART LOST
@@ -1368,7 +1570,102 @@ function requireUser(actionText = "do that", onCreated = null) {
       );
     }, 150);
   }
+// =========================================================
+  // CHECK ANSWER
+  // =========================================================
 
+  function checkAnswer() {
+    const user = getCurrentUser();
+    const q = state.currentQuestion;
+
+    if (!user || !q) return;
+    
+    // Spot the Difference logic is handled inside renderQuestion(), so exit early here
+    if (user.gameMode === "spotDiff") return; 
+
+    if (state.answerLocked) return;
+
+    if (state.selectedAnswer === null) {
+      showToast("Choose an answer first.");
+      return;
+    }
+
+    state.answerLocked = true;
+    stopTimer();
+
+    // CRASH PREVENTION: Safely check for the banks in case question.js is missing parts
+    let activeBank = [];
+    if (user.gameMode === "spotDiff" && typeof SPOT_DIFF_BANK !== "undefined") {
+      activeBank = SPOT_DIFF_BANK;
+    } else if (typeof QUESTION_BANK !== "undefined") {
+      activeBank = QUESTION_BANK;
+    }
+    
+    const langBank = activeBank.filter(question => question.language === user.language);
+    // If the language filter fails (e.g. old save file), fallback to the whole bank to prevent getting stuck
+    const finalBank = langBank.length > 0 ? langBank : activeBank;
+
+    // =======================================================
+    // CORRECT ANSWER
+    // =======================================================
+    // Fallback to -1 if answerIndex is missing so it doesn't crash
+    if (state.selectedAnswer === (q.answerIndex ?? -1)) {
+      const bonus = Math.max(0, state.timeLeft) * POINTS_SPEED_BONUS;
+      const earned = POINTS_CORRECT + bonus;
+
+      user.currentLevelScore = earned;
+      user.totalScore += earned;
+      user.bestScore = Math.max(user.bestScore, user.totalScore);
+
+      if (!user.completedLevels.includes(q.level)) {
+        user.completedLevels.push(q.level);
+      }
+      user.completedLevels.sort((a, b) => a - b);
+
+      user.currentLevel = Math.min(q.level + 1, finalBank.length + 1);
+      user.gameState = "level-complete";
+
+      touchSave(user);
+      saveData();
+      renderLives();
+
+      setFeedback(`Correct! +${earned} points. ${q.explanation || ""}`, "success");
+
+      if ($("checkAnswerBtn")) $("checkAnswerBtn").classList.add("hidden");
+
+      if ($("nextLevelBtn")) {
+        $("nextLevelBtn").classList.remove("hidden");
+        if (q.level >= finalBank.length) {
+          $("nextLevelBtn").textContent = "FINISH GAME";
+        } else {
+          $("nextLevelBtn").textContent = "NEXT LEVEL";
+        }
+      }
+      return;
+    }
+
+    // =======================================================
+    // WRONG ANSWER
+    // =======================================================
+    user.lives = Math.max(0, Number(user.lives || 0) - 1);
+    user.gameState = "answer-incorrect";
+
+    touchSave(user);
+    saveData();
+    renderLives();
+
+    setFeedback(`Not quite. You lost one life. ${q.explanation || ""}`, "error");
+
+    if ($("checkAnswerBtn")) $("checkAnswerBtn").classList.add("hidden");
+
+    if (user.lives <= 0) {
+      setTimeout(() => gameOverReset(), 150);
+      return;
+    }
+
+    $("nextLevelBtn")?.classList.add("hidden");
+    setTimeout(() => openRetryModal("Incorrect Answer", `You lost one heart. You have ${user.lives} heart${user.lives === 1 ? "" : "s"} remaining.`), 150);
+  }
   // =========================================================
   // RENDER LIVES
   // =========================================================
@@ -1440,7 +1737,7 @@ function requireUser(actionText = "do that", onCreated = null) {
     }
   }
 
-  // =========================================================
+// =========================================================
   // NEXT LEVEL
   // =========================================================
 
@@ -1451,10 +1748,15 @@ function requireUser(actionText = "do that", onCreated = null) {
     const q = state.currentQuestion;
     if (!q) return;
 
-    if (q.level >= QUESTION_BANK.length) {
+// Determine which bank we are using
+    const bank = user.gameMode === "spotDiff" ? SPOT_DIFF_BANK : QUESTION_BANK;
+    // Filter questions by the selected language
+    const langBank = bank.filter(question => question.language === user.language);
+
+    if (q.level >= langBank.length) {
       user.gameState = "complete";
       // FIX: Ensure the level stays above the max length to trigger the completion screen on continue
-      user.currentLevel = QUESTION_BANK.length + 1; 
+      user.currentLevel = langBank.length + 1; 
 
       touchSave(user);
       saveData();
@@ -1464,39 +1766,26 @@ function requireUser(actionText = "do that", onCreated = null) {
       showScreen("leaderboardsScreen");
       return;
     }
-    
-    // ... remainder of function ...
 
     // =======================================================
     // NEXT LEVEL
     // =======================================================
 
-    const nextLevelNumber =
-      q.level + 1;
-
-    const nextQuestion =
-      getQuestionForLevel(
-        nextLevelNumber
-      );
+    const nextLevelNumber = q.level + 1;
+    const nextQuestion = getQuestionForLevel(nextLevelNumber);
 
     if (!nextQuestion) {
       user.gameState = "complete";
-
       touchSave(user);
       saveData();
-
       renderLeaderboard();
-      showScreen(
-        "leaderboardsScreen"
-      );
-
+      showScreen("leaderboardsScreen");
       return;
     }
 
-    startLevel(
-      nextLevelNumber
-    );
+    startLevel(nextLevelNumber);
   }
+
 
   // =========================================================
   // RESTART LEVEL
@@ -1761,7 +2050,23 @@ function requireUser(actionText = "do that", onCreated = null) {
 
     $("continueBtn")?.addEventListener(
       "click",
-      continueGame
+      () => {
+        const user = getCurrentUser();
+        if (!user) return;
+        
+        const hasProgress = 
+          user.totalScore > 0 || 
+          user.completedLevels.length > 0 || 
+          user.currentLevel > 1;
+
+        // If they have progress, continue immediately. 
+        // If it is a New Game, show the mode selection.
+        if (hasProgress) {
+          goToWorld();
+        } else {
+          openModeSelectionModal();
+        }
+      }
     );
     $("tutorialBtn")?.addEventListener(
       "click",
@@ -1806,6 +2111,38 @@ function requireUser(actionText = "do that", onCreated = null) {
     showScreen("mainMenu");
     });
 
+    // =======================================================
+    // BOSS KEY (SECRET ADMIN REVEAL)
+    // =======================================================
+    document.addEventListener("keydown", (event) => {
+      // Press Ctrl + Shift + A to reveal or hide the Admin button
+      if (event.ctrlKey && event.shiftKey && (event.key === "A" || event.key === "a")) {
+        const adminBtn = $("adminBtn");
+        if (adminBtn) {
+          adminBtn.classList.toggle("hidden");
+          
+          if (!adminBtn.classList.contains("hidden")) {
+            showToast("Admin access unlocked.");
+          }
+        }
+      }
+    });
+// =======================================================
+    // ADMIN ROUTING
+    // =======================================================
+    $("adminBtn")?.addEventListener("click", () => {
+      showScreen("adminScreen");
+    });
+    
+    $("adminBackBtn")?.addEventListener("click", () => {
+      showScreen("mainMenu");
+    });
+
+    $("adminDeleteUserBtn")?.addEventListener("click", openAdminDeleteModal);
+    
+    // ADD THIS NEW LINE:
+    $("adminDeleteAllBtn")?.addEventListener("click", openAdminDeleteAllModal);
+
     $("exitBtn")?.addEventListener(
       "click",
       exitGame
@@ -1816,15 +2153,11 @@ function requireUser(actionText = "do that", onCreated = null) {
     // =======================================================
 
 
-    $("changeUserBtn")?.addEventListener(
+    $("loginBtn")?.addEventListener(
       "click",
       openChangeUserModal
     );
 
-    $("deleteUserBtn")?.addEventListener(
-      "click",
-      openDeleteUserModal
-    );
 
     $("optionsBackBtn")?.addEventListener(
       "click",
@@ -1990,16 +2323,31 @@ function requireUser(actionText = "do that", onCreated = null) {
     );
   }
 
-  // =========================================================
+
+// =========================================================
   // INITIALIZE
   // =========================================================
 
-function initialize() {
-  bindEvents();
-  updateHeader();
-  showScreen("mainMenu");
+  function initialize() {
+    bindEvents();
+    updateHeader();
+    showScreen("mainMenu");
 
-}
+    // Coming from a Godot house: main.html?level=1&lang=cpp
+    const params = new URLSearchParams(location.search);
+    const level = Number(params.get("level"));
+    const lang = params.get("lang"); 
+
+    const user = getCurrentUser();
+    if (level > 0 && user) {
+      // If Godot sends a language in the URL, automatically switch the user to that language
+      if (lang) {
+        user.language = lang;
+        saveData();
+      }
+      startLevel(level);
+    }
+  }
   // =========================================================
   // START
   // =========================================================
