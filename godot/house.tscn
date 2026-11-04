@@ -7,7 +7,6 @@ size = Vector2(16, 8)
 
 [node name="House" type="Node2D" unique_id=1186460443]
 script = ExtResource("1_hfkix")
-level_to_open = null
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=272456030]
 
